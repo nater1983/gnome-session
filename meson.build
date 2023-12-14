@@ -121,6 +121,14 @@ if systemd_userunitdir == ''
                                                  pkgconfig_define: ['prefix', prefix])
 endif
 
+# Check for elogind
+if enable_elogind
+  elogind_dep = dependency('libelogind', version: '>= 209')
+  session_bin_deps += elogind_dep
+  session_tracking = 'elogind'
+endif
+
+
 libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
 if libsystemd_dep.found()
   session_bin_deps += libsystemd_dep
