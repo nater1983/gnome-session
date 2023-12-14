@@ -108,8 +108,9 @@ install_data(
   install_dir: join_paths(session_datadir, 'glib-2.0', 'schemas'),
 )
 
-unit_conf = configuration_data()
-unit_conf.set('libexecdir', session_libexecdir)
+if enable_systemd_session
+  unit_conf = configuration_data()
+  unit_conf.set('libexecdir', session_libexecdir)
 
 systemd_service = ['gnome-session-manager@.service',
                     'gnome-session-signal-init.service',
@@ -170,6 +171,7 @@ foreach session, req_components: required_components
       session),
   )
 endforeach
+endif
 
 data = files('hardware-compatibility')
 
