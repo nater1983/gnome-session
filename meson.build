@@ -159,7 +159,6 @@ endif
     session_tracking = 'systemd'
   endif
 
-
     if enable_systemd
       session_tracking += ' (with fallback to ConsoleKit)'
     else
