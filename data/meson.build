@@ -108,7 +108,7 @@ install_data(
   install_dir: join_paths(session_datadir, 'glib-2.0', 'schemas'),
 )
 
-if enable_systemd_session
+if enable_systemd_session and enable_systemd
   unit_conf = configuration_data()
   unit_conf.set('libexecdir', session_libexecdir)
 
