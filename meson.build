@@ -113,6 +113,17 @@ enable_session_selector = get_option('session_selector')
 
 session_bin_deps += dependency('gio-unix-2.0', version: glib_req_version)
 
+# Check for session tracking backend
+session_tracking = 'null backend'
+
+enable_systemd = get_option('systemd')
+enable_systemd_session = get_option('systemd_session') != 'disable'
+use_systemd_session = get_option('systemd_session') == 'default'
+enable_systemd_journal = get_option('systemd_journal')
+enable_consolekit = get_option('consolekit')
+if enable_systemd or enable_consolekit
+  session_bin_deps += dependency('gio-unix-2.0', version: glib_req_version)
+
 # Check for systemd
 systemd_userunitdir = get_option('systemduserunitdir')
 if systemd_userunitdir == ''
@@ -128,21 +139,44 @@ if enable_elogind
   session_tracking = 'elogind'
 endif
 
+    libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
+    session_bin_deps += libsystemd_dep
 
-libsystemd_dep = dependency('libsystemd', version: '>= 209', required: false)
-if libsystemd_dep.found()
-  session_bin_deps += libsystemd_dep
-else
-  libsystemd_login_dep = dependency('libsystemd-login', version: '>= 183', required: true)
-  libsystemd_daemon_dep = dependency('libsystemd-daemon', required: true)
-  libsystemd_journal_dep = dependency('libsystemd-journal', required: true)
+    if not libsystemd_dep.found()
+      libsystemd_login_dep = dependency('libsystemd-login', version: '>= 183', required: false)
+      libsystemd_daemon_dep = dependency('libsystemd-daemon', required: false)
+      libsystemd_journal_dep = dependency('libsystemd-journal', required: false)
+      assert(libsystemd_login_dep.found() and libsystemd_daemon_dep.found() and libsystemd_journal_dep.found(),
+             'Systemd support explicitly required, but systemd not found')
 
-  session_bin_deps += [
-    libsystemd_login_dep,
-    libsystemd_daemon_dep,
-    libsystemd_journal_dep
-  ]
+      session_bin_deps += [
+        libsystemd_login_dep,
+        libsystemd_daemon_dep,
+        libsystemd_journal_dep
+      ]
+    endif
+
+    session_tracking = 'systemd'
+  endif
+
+
+    if enable_systemd
+      session_tracking += ' (with fallback to ConsoleKit)'
+    else
+      session_tracking = 'ConsoleKit'
+    endif
+  endif
 endif
+
+if enable_systemd_session
+  assert(enable_systemd, 'Systemd support must be enabled when using systemd session management')
+  assert(enable_systemd or enable_elogind, 'Systemd or elogind support must be enabled when using systemd session management')
+endif
+config_h.set('HAVE_SYSTEMD', enable_systemd)
+config_h.set('ENABLE_SYSTEMD_SESSION', enable_systemd_session)
+config_h.set('ENABLE_SYSTEMD_JOURNAL', enable_systemd_journal)
+config_h.set('HAVE_ELOGIND', enable_elogind)
+config_h.set10('USE_SYSTEMD_SESSION', use_systemd_session)
 
 configure_file(
   output: 'config.h',
