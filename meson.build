@@ -120,8 +120,7 @@ enable_systemd = get_option('systemd')
 enable_systemd_session = get_option('systemd_session') != 'disable'
 use_systemd_session = get_option('systemd_session') == 'default'
 enable_systemd_journal = get_option('systemd_journal')
-enable_consolekit = get_option('consolekit')
-if enable_systemd or enable_consolekit
+if enable_systemd
   session_bin_deps += dependency('gio-unix-2.0', version: glib_req_version)
 
 # Check for systemd
