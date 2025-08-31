@@ -38,16 +38,6 @@ sources = files(
   'main.c'
 )
 
-executable(
-  meson.project_name() + '-init-worker',
-  sources,
-  include_directories: top_inc,
-  dependencies: session_bin_deps,
-  c_args: cflags,
-  install: true,
-  install_dir: session_libexecdir
-)
-
 dbus_ifaces = [
 'org.gnome.SessionManager',
   'org.gnome.SessionManager.Client',
