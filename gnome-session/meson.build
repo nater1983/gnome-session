@@ -1,27 +1,41 @@
-sources = files(
-  'gsm-util.c',
-  'leader-main.c'
-)
+script_conf = configuration_data()
+script_conf.set('libexecdir', session_libexecdir)
 
-cflags = [
-  '-DLOCALE_DIR="@0@"'.format(session_localedir),
-  '-DDATA_DIR="@0@"'.format(session_pkgdatadir),
-  '-DLIBEXECDIR="@0@"'.format(session_libexecdir)
-]
+script = 'gnome-session'
 
-executable(
-  meson.project_name(),
-  sources,
-  include_directories: top_inc,
-  dependencies: session_bin_deps,
-  c_args: cflags,
+configure_file(
+  input: script + '.in',
+  output: script,
   install: true,
-  install_dir: session_bindir
+  install_dir: session_bindir,
+  configuration: script_conf
+)
+
+libgsmutil = static_library(
+  'gsmutil',
+  sources: 'gsm-util.c',
+  include_directories: top_inc,
+  dependencies: session_deps
 )
 
 sources = files(
-    'gsm-util.c',
-    'leader-systemd.c',
+  'gsm-app.c',
+  'gsm-autostart-app.c',
+  'gsm-client.c',
+  'gsm-dbus-client.c',
+  'gsm-fail-whale.c',
+  'gsm-inhibitor.c',
+  'gdm-log.c',
+  'gsm-manager.c',
+  'gsm-presence.c',
+  'gsm-process-helper.c',
+  'gsm-session-fill.c',
+  'gsm-shell-extensions.c',
+  'gsm-shell.c',
+  'gsm-store.c',
+  'gsm-system.c',
+  'gsm-systemd.c',
+  'main.c'
 )
 
 executable(
@@ -34,29 +48,22 @@ executable(
   install_dir: session_libexecdir
 )
 
-sources = files(
-  'gsm-app.c',
-  'gsm-client.c',
-  'gsm-inhibitor.c',
-  'gsm-manager.c',
-  'gsm-presence.c',
-  'gsm-session-fill.c',
-  'gsm-shell.c',
-  'gsm-store.c',
-  'gsm-system.c',
-  'gsm-systemd.c',
-  'gsm-util.c',
-  'service-main.c'
-)
-
 dbus_ifaces = [
-  'org.gnome.SessionManager',
+'org.gnome.SessionManager',
+  'org.gnome.SessionManager.Client',
   'org.gnome.SessionManager.ClientPrivate',
+  'org.gnome.SessionManager.App',
   'org.gnome.SessionManager.Inhibitor',
   'org.gnome.SessionManager.Presence',
 ]
 
 xml_dbus_docs = []
+
+cflags = [
+  '-DLOCALE_DIR="@0@"'.format(session_localedir),
+  '-DDATA_DIR="@0@"'.format(session_pkgdatadir),
+  '-DLIBEXECDIR="@0@"'.format(session_libexecdir)
+]
 
 foreach iface: dbus_ifaces
   out = gnome.gdbus_codegen(
@@ -71,10 +78,24 @@ foreach iface: dbus_ifaces
 endforeach
 
 executable(
-  meson.project_name() + '-service',
-  sources,
+  meson.project_name() + '-binary',  sources,
   include_directories: top_inc,
   dependencies: session_bin_deps,
+  c_args: cflags,
+  link_with: libgsmutil,
+  install: true,
+  install_dir: session_libexecdir
+)
+
+sources = files('gsm-fail-whale-dialog.c')
+
+cflags = '-DLOCALE_DIR="@0@"'.format(session_localedir)
+
+executable(
+  meson.project_name() + '-failed',
+  sources,
+  include_directories: top_inc,
+  dependencies: gtk_dep,
   c_args: cflags,
   install: true,
   install_dir: session_libexecdir
@@ -82,6 +103,7 @@ executable(
 
 units = [
   ['test-client-dbus', [], [gio_dep]],
+  ['test-process-helper', files('gsm-process-helper.c'), [gio_dep]]
 ]
 
 foreach unit: units
